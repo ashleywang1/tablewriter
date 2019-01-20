@@ -74,6 +74,7 @@ type Table struct {
 	autoMergeCells bool
 	hdrLine        bool
 	borders        Border
+	flushLeft      bool
 	colSize        int
 	headerParams   []string
 	columnsParams  []string
@@ -110,6 +111,7 @@ func NewWriter(writer io.Writer) *Table {
 		rowLine:       false,
 		hdrLine:       true,
 		borders:       Border{Left: true, Right: true, Bottom: true, Top: true},
+		flushLeft:     false,
 		colSize:       -1,
 		headerParams:  []string{},
 		columnsParams: []string{},
@@ -272,6 +274,12 @@ func (t *Table) SetBorder(border bool) {
 
 func (t *Table) SetBorders(border Border) {
 	t.borders = border
+}
+
+// Set Table Flush Left
+// This would align the entire table to the left margin
+func (t *Table) SetFlushLeft(flushLeft bool) {
+	t.flushLeft = flushLeft
 }
 
 // Append row to table
@@ -626,10 +634,17 @@ func (t *Table) printRow(columns [][]string, rowIdx int) {
 	for x := 0; x < max; x++ {
 		for y := 0; y < total; y++ {
 
-			// Check if border is set
-			fmt.Fprint(t.out, ConditionString((!t.borders.Left && y == 0), SPACE, t.pColumn))
+			if t.flushLeft { // Don't print anything to the left of the first column
+				if y != 0 {
+					fmt.Fprintf(t.out, SPACE)
+				}
+			} else {
+				// Check if border is set
+				fmt.Fprint(t.out, ConditionString((!t.borders.Left && y == 0), SPACE, t.pColumn))
 
-			fmt.Fprintf(t.out, SPACE)
+				fmt.Fprintf(t.out, SPACE)
+			}
+
 			str := columns[y][x]
 
 			// Embedding escape sequence with column value
